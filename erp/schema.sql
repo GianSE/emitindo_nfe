@@ -96,6 +96,24 @@ CREATE TABLE IF NOT EXISTS titulos (
     UNIQUE (origem_chave, tipo, parcela)
 );
 
+-- ===================== AUTENTICAÇÃO / CONFIG ========================= --
+-- Usuários locais (login por usuário/senha). Senha guardada como hash scrypt.
+CREATE TABLE IF NOT EXISTS usuarios (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username    TEXT UNIQUE NOT NULL,
+    senha_hash  TEXT NOT NULL,
+    nome        TEXT,
+    papel       TEXT NOT NULL DEFAULT 'operador',   -- admin | operador | financeiro ...
+    criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Configurações do ERP editáveis EM RUNTIME (ex.: SSO), no estilo MinIO.
+CREATE TABLE IF NOT EXISTS configuracoes (
+    chave          TEXT PRIMARY KEY,
+    valor          JSONB NOT NULL,
+    atualizado_em  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- ===================== RECEBIMENTO (compras) ========================= --
 -- Cursor da Distribuição DFe: até que NSU já consumimos da SEFAZ.
 CREATE TABLE IF NOT EXISTS dfe_cursor (

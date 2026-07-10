@@ -1,0 +1,18 @@
+# dependências
+node_modules/
+
+# build
+dist/
+
+# variáveis de ambiente (NUNCA versione segredos!)
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

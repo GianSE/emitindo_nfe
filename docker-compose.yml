@@ -84,6 +84,29 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # -------- Core do ERP: API (Node/Fastify) + UI (React/Vite) -------- #
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+      PORT: "3001"
+      AUTH_SECRET: "${AUTH_SECRET:-troque-em-producao}"  # assina os JWT de sessão local
+      # O SSO (Authentik) é configurado DENTRO do ERP (menu Configurações), não aqui.
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   # "API"/CLI para criar vendas — não fica rodando; use com `docker compose run`.
   erp:
     build:
