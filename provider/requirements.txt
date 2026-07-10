@@ -1,0 +1,18 @@
+# Manipulação de XML (rápida e com suporte a C14N/namespaces)
+lxml>=5.0
+
+# Certificados digitais: gerar o certificado de teste e ler o .pfx
+cryptography>=42.0
+
+# Assinatura XML-DSig (padrão exigido pela SEFAZ)
+signxml>=4.0
+
+# Traz os SCHEMAS OFICIAIS (XSD) da NFe 4.00 empacotados — usados na validação
+nfelib>=2.0
+
+# Geração do DANFE em PDF (Python puro, desenha o código de barras Code-128)
+reportlab>=4.0
+
+# HTTP com certificado de cliente — usado SÓ no transporte REAL (modo="real").
+# No modo "simulado" (padrão) nem é necessário.
+requests>=2.31

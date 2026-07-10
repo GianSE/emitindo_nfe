@@ -1,0 +1,11 @@
+# Ambiente virtual
+.venv/
+__pycache__/
+*.pyc
+
+# Artefatos gerados pela simulação
+saida/
+*.pfx
+
+# Nunca versione certificados reais!
+*.p12

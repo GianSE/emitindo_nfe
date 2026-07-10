@@ -1,0 +1,101 @@
+# =====================================================================
+# ERP desacoplado por eventos — um container por "pedaço".
+#
+#   postgres        -> banco (fila via outbox + log de eventos)
+#   worker-emissao  -> consome a outbox, emite as NFes (usa o provider)
+#   worker-estoque  -> consome 'nfe.autorizada', baixa o estoque
+#   erp             -> "API"/CLI para criar vendas (rode sob demanda)
+#
+# Subir tudo:       docker compose up --build
+# Criar uma venda:  docker compose run --rm erp python app_erp.py --qtd 2
+# =====================================================================
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: erp
+      POSTGRES_PASSWORD: erp
+      POSTGRES_DB: erp
+    ports:
+      - "5433:5432"           # exposto p/ você inspecionar com psql/DBeaver
+    volumes:
+      # o schema roda automaticamente na 1ª subida do banco
+      - ./erp/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  worker-emissao:
+    build:
+      context: .
+      dockerfile: erp/Dockerfile
+    command: python worker_emissao.py
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+      # "O BOTÃO": descomente p/ delegar a emissão à Focus NFe (sem mexer no código)
+      # FISCAL_BACKEND: focus
+      # FOCUS_TOKEN: seu_token_aqui
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-estoque:
+    build:
+      context: .
+      dockerfile: erp/Dockerfile
+    command: python worker_estoque.py
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 4º serviço: financeiro (contas a receber/pagar) — outro consumidor dos eventos
+  worker-financeiro:
+    build:
+      context: .
+      dockerfile: erp/Dockerfile
+    command: python worker_financeiro.py
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 3º serviço: recebimento de compras (Distribuição DFe -> entrada no estoque)
+  worker-recebimento:
+    build:
+      context: .
+      dockerfile: erp/Dockerfile
+    command: python worker_recebimento.py
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+      DFE_POLL_SEG: "10"        # produção: ~3600 (intervalo mínimo da SEFAZ)
+      # FISCAL_BACKEND: focus    # "o botão": troca o provider fiscal
+      # FOCUS_TOKEN: seu_token
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # "API"/CLI para criar vendas — não fica rodando; use com `docker compose run`.
+  erp:
+    build:
+      context: .
+      dockerfile: erp/Dockerfile
+    command: python app_erp.py
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["cli"]          # não sobe no `up`; só via `run`
+
+volumes:
+  pgdata:
