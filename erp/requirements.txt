@@ -1,6 +1,9 @@
 # Driver Postgres (v3) com suporte a LISTEN/NOTIFY e transações
 psycopg[binary]>=3.1
 
+# Storage S3 (MinIO) — guarda XML autorizado + DANFE
+minio>=7.2
+
 # Os workers importam o pacote fiscal `nfe` da pasta ../provider,
 # que tem suas próprias dependências (ver provider/requirements.txt):
 #   lxml, cryptography, signxml, nfelib, reportlab

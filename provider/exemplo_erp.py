@@ -17,9 +17,9 @@ try:
 except (AttributeError, ValueError):
     pass
 
-from provider.nfe.provider import NFeProvider, ConfigNFe
-from provider.nfe.danfe import gerar_danfe
-from provider.nfe.dados_exemplo import DADOS  # no seu ERP, isso viria do banco de dados
+from nfe.provider import NFeProvider, ConfigNFe
+from nfe.danfe import gerar_danfe
+from nfe.dados_exemplo import DADOS  # no seu ERP, isso viria do banco de dados
 
 SAIDA = Path("saida")
 

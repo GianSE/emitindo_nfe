@@ -21,11 +21,11 @@ from pathlib import Path
 
 from lxml import etree
 
-from .certificado import gerar_certificado_teste
-from .gerar_xml import gerar_nfe
-from .assinar import assinar_nfe
-from .validar import validar_nfe
-from .sefaz import (
+from .core.certificado import gerar_certificado_teste
+from .core.gerar_xml import gerar_nfe
+from .core.assinar import assinar_nfe
+from .core.validar import validar_nfe
+from .sefaz.comunicador import (
     ComunicadorSEFAZ,
     TransporteSimulado,
     TransporteReal,

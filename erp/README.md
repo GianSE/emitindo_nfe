@@ -84,18 +84,21 @@ Só o Postgres em container, workers no seu Python:
 ```bash
 docker run -d --name erp-postgres -e POSTGRES_USER=erp -e POSTGRES_PASSWORD=erp \
   -e POSTGRES_DB=erp -p 5433:5432 postgres:16-alpine
-docker exec -i erp-postgres psql -U erp -d erp < erp/schema.sql
+
+# o SCHEMA é criado pelas migrations do Drizzle (fonte da verdade do DDL):
+cd backend && npm install && npm run db:migrate && cd ..
 
 # usando o venv do provider (que já tem as dependências fiscais + psycopg):
-provider/.venv/Scripts/python erp/worker_emissao.py      # terminal 1 (vendas)
-provider/.venv/Scripts/python erp/worker_estoque.py      # terminal 2 (estoque)
-provider/.venv/Scripts/python erp/worker_recebimento.py  # terminal 3 (compras)
-provider/.venv/Scripts/python erp/worker_financeiro.py   # terminal 4 (financeiro)
+provider/.venv/Scripts/python erp/workers/emissao.py      # terminal 1 (vendas)
+provider/.venv/Scripts/python erp/workers/estoque.py      # terminal 2 (estoque)
+provider/.venv/Scripts/python erp/workers/recebimento.py  # terminal 3 (compras)
+provider/.venv/Scripts/python erp/workers/financeiro.py   # terminal 4 (financeiro)
 provider/.venv/Scripts/python erp/app_erp.py --parcelas 3 # terminal 5 (cria venda 3x)
 ```
 
-O `worker_recebimento` já "recebe" 2 notas de fornecedores simuladas (Distribuição
-DFe) e dá entrada no estoque automaticamente.
+O `workers/recebimento.py` já "recebe" 2 notas de fornecedores simuladas
+(Distribuição DFe) e dá entrada no estoque automaticamente. O schema/seed inicial
+(admin, produtos, cliente) é criado por `npm run db:migrate` + o seed do backend.
 
 ## Tabelas
 

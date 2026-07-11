@@ -5,20 +5,22 @@ Cada pasta é uma responsabilidade independente:
 
 ```
 emitindo_nfe/
-├── provider/     🐍 Serviço FISCAL (Python): monta XML, assina, fala com a SEFAZ,
-│                    gera DANFE, recebe compras (Distribuição DFe). Tem "botão"
-│                    para trocar por um provedor externo (Focus NFe).
+├── provider/     🐍 Serviço FISCAL (Python) — pacote `nfe/` em subpacotes:
+│   └── nfe/{core/, sefaz/, danfe.py, provider.py}   XML, assinatura, SEFAZ, DANFE,
+│                    Distribuição DFe. "Botão" p/ trocar por Focus NFe.
 │
-├── erp/          🐍 ORQUESTRAÇÃO por eventos (Python + Postgres): outbox + 4 workers
-│                    (emissão, recebimento, estoque, financeiro) desacoplados.
+├── erp/          🐍 ORQUESTRAÇÃO por eventos (Python + Postgres):
+│   ├── workers/  {emissao, estoque, recebimento, financeiro}
+│   └── shared/   {db, storage}          outbox + 4 workers desacoplados.
 │
-├── backend/      🟢 CORE / API (Node + Fastify + TypeScript): expõe REST, escreve
-│                    na mesma outbox que o worker Python consome (poliglota).
+├── backend/      🟢 CORE / API (Node + Fastify + TypeScript), em CAMADAS:
+│   └── src/{routes/, controllers/, services/, db/, lib/, plugins/}
+│   └── drizzle/  migrations (Drizzle é o dono do schema)
 │
-├── frontend/     ⚛️  UI (React + Vite + TypeScript): dashboard, nova venda, notas,
-│                    estoque, financeiro, compras — com auto-refresh.
+├── frontend/     ⚛️  UI (React + Vite + Tailwind):
+│   └── src/{pages/, components/, hooks/, api/, auth/}
 │
-└── docker-compose.yml   sobe tudo (Postgres + workers + backend + frontend).
+└── docker-compose.yml   postgres → migrate → workers + backend + frontend + minio.
 ```
 
 ## O fluxo completo (o que acontece ao clicar "Emitir NF-e")

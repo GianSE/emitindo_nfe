@@ -2,9 +2,10 @@
 # ERP desacoplado por eventos — um container por "pedaço".
 #
 #   postgres        -> banco (fila via outbox + log de eventos)
-#   worker-emissao  -> consome a outbox, emite as NFes (usa o provider)
-#   worker-estoque  -> consome 'nfe.autorizada', baixa o estoque
-#   erp             -> "API"/CLI para criar vendas (rode sob demanda)
+#   migrate         -> aplica as migrations do Drizzle (cria o schema) e sai
+#   worker-*        -> consumidores (emissão, estoque, recebimento, financeiro)
+#   backend/front   -> API (Fastify) + UI (React)
+#   minio           -> storage S3 do XML/DANFE
 #
 # Subir tudo:       docker compose up --build
 # Criar uma venda:  docker compose run --rm erp python app_erp.py --qtd 2
@@ -17,10 +18,8 @@ services:
       POSTGRES_PASSWORD: erp
       POSTGRES_DB: erp
     ports:
-      - "5433:5432"           # exposto p/ você inspecionar com psql/DBeaver
+      - "5433:5432"           # exposto p/ inspecionar com psql/DBeaver
     volumes:
-      # o schema roda automaticamente na 1ª subida do banco
-      - ./erp/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U erp"]
@@ -28,60 +27,79 @@ services:
       timeout: 3s
       retries: 10
 
-  worker-emissao:
-    build:
-      context: .
-      dockerfile: erp/Dockerfile
-    command: python worker_emissao.py
+  # Cria/atualiza o schema via migrations do Drizzle (fonte da verdade do DDL).
+  migrate:
+    build: ./backend
+    command: npm run db:migrate
     environment:
       DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
-      # "O BOTÃO": descomente p/ delegar a emissão à Focus NFe (sem mexer no código)
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: erp
+      MINIO_ROOT_PASSWORD: erp12345
+    ports:
+      - "9010:9000"   # API S3
+      - "9011:9001"   # console web
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  worker-emissao:
+    build: { context: ., dockerfile: erp/Dockerfile }
+    command: python workers/emissao.py
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+      MINIO_ENDPOINT: minio:9000     # o worker fala com o MinIO pela rede interna
+      MINIO_ACCESS_KEY: erp
+      MINIO_SECRET_KEY: erp12345
+      MINIO_BUCKET: nfe-docs
+      # "O BOTÃO": descomente p/ delegar a emissão à Focus NFe
       # FISCAL_BACKEND: focus
       # FOCUS_TOKEN: seu_token_aqui
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   worker-estoque:
-    build:
-      context: .
-      dockerfile: erp/Dockerfile
-    command: python worker_estoque.py
+    build: { context: ., dockerfile: erp/Dockerfile }
+    command: python workers/estoque.py
     environment:
       DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
-  # 4º serviço: financeiro (contas a receber/pagar) — outro consumidor dos eventos
-  worker-financeiro:
-    build:
-      context: .
-      dockerfile: erp/Dockerfile
-    command: python worker_financeiro.py
-    environment:
-      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # 3º serviço: recebimento de compras (Distribuição DFe -> entrada no estoque)
   worker-recebimento:
-    build:
-      context: .
-      dockerfile: erp/Dockerfile
-    command: python worker_recebimento.py
+    build: { context: ., dockerfile: erp/Dockerfile }
+    command: python workers/recebimento.py
     environment:
       DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
-      DFE_POLL_SEG: "10"        # produção: ~3600 (intervalo mínimo da SEFAZ)
-      # FISCAL_BACKEND: focus    # "o botão": troca o provider fiscal
-      # FOCUS_TOKEN: seu_token
+      DFE_POLL_SEG: "10"             # produção: ~3600 (intervalo mínimo da SEFAZ)
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker-financeiro:
+    build: { context: ., dockerfile: erp/Dockerfile }
+    command: python workers/financeiro.py
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   # -------- Core do ERP: API (Node/Fastify) + UI (React/Vite) -------- #
@@ -90,13 +108,17 @@ services:
     environment:
       DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
       PORT: "3001"
-      AUTH_SECRET: "${AUTH_SECRET:-troque-em-producao}"  # assina os JWT de sessão local
-      # O SSO (Authentik) é configurado DENTRO do ERP (menu Configurações), não aqui.
+      AUTH_SECRET: "${AUTH_SECRET:-troque-em-producao}"
+      # O SSO (Authentik) é configurado DENTRO do ERP (menu Configurações).
+      MINIO_ENDPOINT: http://localhost:9010   # backend assina URLs p/ o NAVEGADOR (host)
+      MINIO_ACCESS_KEY: erp
+      MINIO_SECRET_KEY: erp12345
+      MINIO_BUCKET: nfe-docs
     ports:
       - "3001:3001"
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   frontend:
@@ -109,16 +131,15 @@ services:
 
   # "API"/CLI para criar vendas — não fica rodando; use com `docker compose run`.
   erp:
-    build:
-      context: .
-      dockerfile: erp/Dockerfile
+    build: { context: ., dockerfile: erp/Dockerfile }
     command: python app_erp.py
     environment:
       DATABASE_URL: postgresql://erp:erp@postgres:5432/erp
     depends_on:
-      postgres:
-        condition: service_healthy
-    profiles: ["cli"]          # não sobe no `up`; só via `run`
+      migrate:
+        condition: service_completed_successfully
+    profiles: ["cli"]
 
 volumes:
   pgdata:
+  miniodata:

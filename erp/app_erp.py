@@ -29,7 +29,8 @@ try:
 except (AttributeError, ValueError):
     pass
 
-from db import conectar
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # erp/ para 'shared'
+from shared.db import conectar
 
 # Catálogo simples: cliente + itens de uma venda (no ERP real, viria da tela/API).
 CLIENTE = {

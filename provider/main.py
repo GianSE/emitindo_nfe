@@ -18,14 +18,14 @@ try:
 except (AttributeError, ValueError):
     pass
 
-from provider.nfe.certificado import gerar_certificado_teste
-from provider.nfe.gerar_xml import gerar_nfe
-from provider.nfe.assinar import assinar_nfe
-from provider.nfe.verificar import verificar_nfe
-from provider.nfe.validar import validar_nfe
-from provider.nfe.danfe import gerar_danfe
-from provider.nfe.chave_acesso import formatar_chave
-from provider.nfe.dados_exemplo import DADOS
+from nfe.core.certificado import gerar_certificado_teste
+from nfe.core.gerar_xml import gerar_nfe
+from nfe.core.assinar import assinar_nfe
+from nfe.core.verificar import verificar_nfe
+from nfe.core.validar import validar_nfe
+from nfe.danfe import gerar_danfe
+from nfe.core.chave_acesso import formatar_chave
+from nfe.dados_exemplo import DADOS
 
 SENHA_PFX = "1234"
 PFX = "certificado_teste.pfx"
