@@ -4,6 +4,7 @@ import { db } from "../db/client.js";
 import { usuarios, produtos, clientes, numeracao, consumidores, dfeCursor } from "../db/schema.js";
 import { hashSenha } from "../lib/senha.js";
 import { getSso, setSso } from "../lib/sso.js";
+import { existeEmpresa, setEmpresa, EMPRESA_PADRAO } from "../lib/empresa.js";
 
 export async function seed(log: (m: string) => void) {
   // linhas de controle (idempotentes)
@@ -36,4 +37,5 @@ export async function seed(log: (m: string) => void) {
   }
 
   if (!(await getSso())) await setSso({ enabled: false, issuer: "", clientId: "" });
+  if (!(await existeEmpresa())) await setEmpresa(EMPRESA_PADRAO);
 }

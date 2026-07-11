@@ -38,15 +38,22 @@ sys.path.insert(0, str(_ERP.parent / "provider"))      # para 'nfe'
 from nfe.provider import ConfigNFe  # noqa: E402
 from nfe.sefaz.fabrica import criar_provider  # noqa: E402
 from shared.db import conectar  # noqa: E402
+from shared.empresa import carregar_empresa  # noqa: E402
 
 INTERVALO_POLL = int(os.environ.get("DFE_POLL_SEG", "10"))  # produção: ~3600
 
-_config = ConfigNFe(
-    backend=os.environ.get("FISCAL_BACKEND", "proprio"),
-    cnpj="12345678000190", uf="SP", ambiente="2", modo="simulado",
-    focus_token=os.environ.get("FOCUS_TOKEN", ""),
-)
-provider = criar_provider(_config)
+# provider criado sob demanda com o CNPJ do emitente (do banco)
+_provider = None
+def obter_provider(conn):
+    global _provider
+    if _provider is None:
+        emp = carregar_empresa(conn)
+        _provider = criar_provider(ConfigNFe(
+            backend=os.environ.get("FISCAL_BACKEND", "proprio"),
+            cnpj=emp["CNPJ"], uf=emp["UF"], ambiente=emp.get("ambiente", "2"),
+            modo="simulado", focus_token=os.environ.get("FOCUS_TOKEN", ""),
+        ))
+    return _provider
 
 
 def log(msg: str):
@@ -55,6 +62,7 @@ def log(msg: str):
 
 def poll_uma_vez(conn) -> int:
     """Uma rodada de consulta. Retorna quantas notas NOVAS foram recebidas."""
+    provider = obter_provider(conn)
     cursor = conn.execute("SELECT ult_nsu FROM dfe_cursor WHERE id=1").fetchone()[0]
 
     # chamada externa (rede) FORA de transação

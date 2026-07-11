@@ -43,30 +43,25 @@ sys.path.insert(0, str(_ERP.parent / "provider"))      # para 'nfe' (pacote fisc
 from nfe.provider import ConfigNFe  # noqa: E402
 from nfe.sefaz.fabrica import criar_provider  # noqa: E402
 from shared.db import conectar  # noqa: E402
+from shared.empresa import carregar_empresa  # noqa: E402
 
 # --- parâmetros de retry ---------------------------------------------------- #
 MAX_TENTATIVAS = 5
 BACKOFF_SEG = 5            # backoff = BACKOFF_SEG * tentativa
 REAP_SEGUNDOS = 60        # requeue de linhas presas em 'processando'
 
-# --- cadastro da empresa emitente (no ERP real, viria do banco) ------------- #
-EMIT = {
-    "CNPJ": "12345678000190", "xNome": "EMPRESA TESTE LTDA", "xFant": "LOJA TESTE",
-    "xLgr": "RUA DAS FLORES", "nro": "100", "xBairro": "CENTRO",
-    "cMun": "3550308", "xMun": "SAO PAULO", "UF": "SP", "cUF": "35",
-    "CEP": "01001000", "fone": "1130000000", "IE": "110042490114", "CRT": "1",
-}
-
-# Provider fiscal escolhido por VARIÁVEL DE AMBIENTE — este é "o botão":
-#   FISCAL_BACKEND=proprio  (default) -> nosso provider, modo simulado
-#   FISCAL_BACKEND=focus  FOCUS_TOKEN=xxxxx  -> delega para a Focus NFe
-# Nada mais no worker muda ao trocar.
-_config = ConfigNFe(
-    backend=os.environ.get("FISCAL_BACKEND", "proprio"),
-    uf="SP", ambiente="2", modo="simulado",
-    focus_token=os.environ.get("FOCUS_TOKEN", ""),
-)
-provider = criar_provider(_config)
+# Provider fiscal criado sob demanda com os dados do emitente (vindos do banco).
+#   FISCAL_BACKEND=proprio (default) -> nosso provider | focus -> Focus NFe ("o botão")
+_provider = None
+def obter_provider(empresa: dict):
+    global _provider
+    if _provider is None:
+        _provider = criar_provider(ConfigNFe(
+            backend=os.environ.get("FISCAL_BACKEND", "proprio"),
+            cnpj=empresa["CNPJ"], uf=empresa["UF"], ambiente=empresa.get("ambiente", "2"),
+            modo="simulado", focus_token=os.environ.get("FOCUS_TOKEN", ""),
+        ))
+    return _provider
 
 
 class TransitoriaError(Exception):
@@ -77,16 +72,16 @@ def log(msg: str):
     print(f"[{datetime.datetime.now():%H:%M:%S}] {msg}", flush=True)
 
 
-def montar_dados(cliente, itens, serie, numero, cnf) -> dict:
+def montar_dados(empresa, cliente, itens, serie, numero, cnf) -> dict:
     """Traduz venda -> estrutura que o provider.emitir() espera."""
     agora = datetime.datetime.now().astimezone().replace(microsecond=0)
     return {
         "ide": {
             "ano": agora.year, "mes": agora.month, "natOp": "VENDA DE MERCADORIA",
             "serie": str(serie), "nNF": str(numero), "dhEmi": agora.isoformat(),
-            "tpAmb": "2", "cNF": cnf,   # <- cNF fixo garante CHAVE estável em retries
+            "tpAmb": empresa.get("ambiente", "2"), "cNF": cnf,  # cNF fixo -> CHAVE estável
         },
-        "emit": EMIT,
+        "emit": empresa,   # emitente vindo do cadastro (banco)
         "dest": cliente,
         "itens": itens,
         "pagamento": {"tPag": "17"},
@@ -185,8 +180,9 @@ def _processar(conn, outbox_id, venda_id):
 
     # ---- chamada ao provider (contata a SEFAZ ou a Focus) -------------- #
     # ref = venda_id -> chave de idempotência (a Focus usa isso; no próprio, ignora).
-    dados = montar_dados(cliente, itens, serie, numero, cnf)
-    resultado = provider.emitir(dados, ref=venda_id)
+    empresa = carregar_empresa(conn)                      # emitente do cadastro (banco)
+    dados = montar_dados(empresa, cliente, itens, serie, numero, cnf)
+    resultado = obter_provider(empresa).emitir(dados, ref=venda_id)
 
     # backend assíncrono (ex.: Focus "processando") -> reconsulta depois (retry)
     if resultado.pendente:

@@ -3,6 +3,7 @@ import { apiGet, apiPut } from "../api/client.js";
 import { type SsoConfig } from "../auth/auth.js";
 import { input, btnPrim } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
+import { EmpresaForm } from "../components/EmpresaForm.js";
 import { aplicarTema, temaAtual, type Tema } from "../theme.js";
 
 export function Configuracoes() {
@@ -26,7 +27,10 @@ export function Configuracoes() {
   ];
 
   return (
-    <div className="max-w-xl space-y-4">
+    <div className="max-w-3xl space-y-4">
+      {/* Empresa (emitente) */}
+      <EmpresaForm />
+
       {/* Aparência */}
       <div className="rounded-md border border-outline-variant bg-surface-container-lowest p-4">
         <h2 className="text-headline-sm text-on-background">Aparência</h2>
