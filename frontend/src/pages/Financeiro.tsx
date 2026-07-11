@@ -13,9 +13,9 @@ export function Financeiro() {
       )} />
   );
   return (
-    <div className="grid gap-7 md:grid-cols-2">
-      <div><h3 className="mb-2 font-semibold text-green-400">A receber (vendas)</h3>{tab(receber)}</div>
-      <div><h3 className="mb-2 font-semibold text-red-400">A pagar (compras)</h3>{tab(pagar)}</div>
+    <div className="grid gap-5 md:grid-cols-2">
+      <div><h3 className="mb-2 font-semibold text-success">A receber (vendas)</h3>{tab(receber)}</div>
+      <div><h3 className="mb-2 font-semibold text-error">A pagar (compras)</h3>{tab(pagar)}</div>
     </div>
   );
 }

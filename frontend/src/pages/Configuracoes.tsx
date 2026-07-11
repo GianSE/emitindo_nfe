@@ -15,10 +15,10 @@ export function Configuracoes() {
   }
 
   return (
-    <div className="max-w-xl rounded-xl border border-line bg-panel p-6">
+    <div className="max-w-xl rounded-md border border-outline-variant bg-surface-container-lowest p-4">
       <h2 className="text-lg font-bold">Single Sign-On (Authentik / OIDC)</h2>
-      <p className="mt-1 mb-5 text-sm text-muted">
-        Configure aqui — igual ao MinIO, o SSO vive dentro do sistema, não no <code className="rounded bg-panel2 px-1.5">.env</code>.
+      <p className="mt-1 mb-5 text-sm text-on-surface-variant">
+        Configure aqui — igual ao MinIO, o SSO vive dentro do sistema, não no <code className="rounded bg-surface-container px-1.5">.env</code>.
       </p>
       <label className="mb-3 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={cfg.enabled} onChange={(e) => setCfg({ ...cfg, enabled: e.target.checked })} />
@@ -26,22 +26,22 @@ export function Configuracoes() {
       </label>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs text-muted">Issuer URL</label>
+          <label className="mb-1 block text-xs text-on-surface-variant">Issuer URL</label>
           <input className={input} placeholder="https://authentik.suaempresa.com/application/o/erp/"
             value={cfg.issuer} onChange={(e) => setCfg({ ...cfg, issuer: e.target.value })} />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-muted">Client ID</label>
+          <label className="mb-1 block text-xs text-on-surface-variant">Client ID</label>
           <input className={input} placeholder="erp-client"
             value={cfg.clientId} onChange={(e) => setCfg({ ...cfg, clientId: e.target.value })} />
         </div>
       </div>
       <div className="mt-5 flex items-center gap-3">
         <button className={btnPrim} onClick={salvar}>Salvar</button>
-        {msg && <span className="text-sm text-muted">{msg}</span>}
+        {msg && <span className="text-sm text-on-surface-variant">{msg}</span>}
       </div>
-      <p className="mt-4 text-xs text-muted">
-        No Authentik: crie um Provider OIDC + Application, com Redirect URI <code className="rounded bg-panel2 px-1.5">{window.location.origin}/</code>.
+      <p className="mt-4 text-xs text-on-surface-variant">
+        No Authentik: crie um Provider OIDC + Application, com Redirect URI <code className="rounded bg-surface-container px-1.5">{window.location.origin}/</code>.
       </p>
     </div>
   );

@@ -9,7 +9,7 @@ export function Compras() {
       render={(n) => (
         <Tr key={n.chave}><Td>{n.nsu}</Td><Td mono>{n.cnpjEmitente ?? n.cnpj_emitente}</Td>
           <Td mono>…{String(n.chave).slice(-12)}</Td>
-          <Td>{n.manifestacao ? <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">✓ {n.manifestacao}</span> : "—"}</Td>
+          <Td>{n.manifestacao ? <span className="rounded-full bg-success/100/15 px-2 py-0.5 text-xs text-success">✓ {n.manifestacao}</span> : "—"}</Td>
         </Tr>
       )} />
   );

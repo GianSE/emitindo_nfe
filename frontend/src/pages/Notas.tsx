@@ -21,10 +21,10 @@ export function Notas() {
           <Td>
             {n.armazenado ? (
               <span className="flex gap-3 text-xs">
-                <button onClick={() => baixar(n.chave, "xml")} className="text-brand hover:underline">XML</button>
-                <button onClick={() => baixar(n.chave, "danfe")} className="text-brand hover:underline">DANFE</button>
+                <button onClick={() => baixar(n.chave, "xml")} className="text-primary hover:underline">XML</button>
+                <button onClick={() => baixar(n.chave, "danfe")} className="text-primary hover:underline">DANFE</button>
               </span>
-            ) : <span className="text-xs text-muted">—</span>}
+            ) : <span className="text-xs text-on-surface-variant">—</span>}
           </Td>
         </Tr>
       )} />

@@ -18,7 +18,7 @@ export function Clientes() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-line bg-panel p-5">
+      <div className="rounded-md border border-outline-variant bg-surface-container-lowest p-4">
         <h3 className="mb-3 font-semibold">Novo cliente</h3>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Field label="Nome" span2><input className={input} value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} /></Field>
@@ -36,7 +36,7 @@ export function Clientes() {
       <Tabela linhas={lista} vazio="Nenhum cliente." cabecalho={["Nome", "CPF/CNPJ", "Município", "UF", ""]}
         render={(c) => (
           <Tr key={c.id}><Td>{c.nome}</Td><Td mono>{c.doc}</Td><Td>{c.municipio}</Td><Td>{c.uf}</Td>
-            <Td><button onClick={() => remover(c.id)} className="text-xs text-red-400 hover:underline">excluir</button></Td>
+            <Td><button onClick={() => remover(c.id)} className="text-xs text-error hover:underline">excluir</button></Td>
           </Tr>
         )} />
     </div>
