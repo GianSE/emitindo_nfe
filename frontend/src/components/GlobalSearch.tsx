@@ -8,20 +8,21 @@ type Resultado = { grupo: string; icone: string; titulo: string; sub?: string; a
 export function GlobalSearch({ onNavigate }: { onNavigate: (aba: string) => void }) {
   const [q, setQ] = useState("");
   const [aberto, setAberto] = useState(false);
-  const [dados, setDados] = useState<{ produtos: any[]; clientes: any[]; notas: any[]; titulos: any[] } | null>(null);
+  const [dados, setDados] = useState<{ produtos: any[]; clientes: any[]; notas: any[]; titulos: any[]; fornecedores: any[] } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
   // carrega os dados uma vez (na 1ª abertura)
   async function carregar() {
     if (dados) return;
-    const [produtos, clientes, notas, titulos] = await Promise.all([
+    const [produtos, clientes, notas, titulos, fornecedores] = await Promise.all([
       apiGet<any[]>("/produtos").catch(() => []),
       apiGet<any[]>("/clientes").catch(() => []),
       apiGet<any[]>("/notas").catch(() => []),
       apiGet<any[]>("/titulos").catch(() => []),
+      apiGet<any[]>("/fornecedores").catch(() => []),
     ]);
-    setDados({ produtos, clientes, notas, titulos });
+    setDados({ produtos, clientes, notas, titulos, fornecedores });
   }
 
   // atalho Ctrl/Cmd+K e Esc
@@ -53,6 +54,8 @@ export function GlobalSearch({ onNavigate }: { onNavigate: (aba: string) => void
       res.push({ grupo: "Nota", icone: "nota", titulo: `NF nº ${n.numero ?? "—"} · ${n.cliente}`, sub: n.chave ?? n.nprot ?? "", aba: "Notas" });
     for (const t of dados.titulos) if (inc(t.descricao) || inc(t.origemChave))
       res.push({ grupo: "Financeiro", icone: "financeiro", titulo: t.descricao, sub: `${t.tipo} · R$ ${t.valor}`, aba: "Financeiro" });
+    for (const f of dados.fornecedores) if (inc(f.cnpj) || inc(f.nome))
+      res.push({ grupo: "Fornecedor", icone: "fornecedor", titulo: f.nome ?? f.cnpj, sub: f.cnpj, aba: "Fornecedores" });
   }
   const lista = res.slice(0, 12);
 

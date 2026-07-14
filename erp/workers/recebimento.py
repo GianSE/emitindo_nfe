@@ -82,10 +82,16 @@ def poll_uma_vez(conn) -> int:
             return 0  # outra réplica já avançou; recomeça no próximo ciclo
 
         for doc in resp.documentos:
+            # upsert do fornecedor (FK) pelo CNPJ do emitente
+            fid = conn.execute(
+                "INSERT INTO fornecedores (cnpj, nome) VALUES (%s, %s) "
+                "ON CONFLICT (cnpj) DO UPDATE SET cnpj=EXCLUDED.cnpj RETURNING id",
+                (doc.cnpj_emitente, f"Fornecedor {doc.cnpj_emitente}"),
+            ).fetchone()[0]
             inserido = conn.execute(
-                "INSERT INTO notas_entrada (nsu, chave, cnpj_emitente, xml, itens) "
-                "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (chave) DO NOTHING RETURNING id",
-                (doc.nsu, doc.chave, doc.cnpj_emitente, doc.xml, json.dumps(doc.itens)),
+                "INSERT INTO notas_entrada (fornecedor_id, nsu, chave, cnpj_emitente, xml, itens) "
+                "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (chave) DO NOTHING RETURNING id",
+                (fid, doc.nsu, doc.chave, doc.cnpj_emitente, doc.xml, json.dumps(doc.itens)),
             ).fetchone()
             if inserido:  # nota realmente nova (idempotência por chave)
                 conn.execute(
@@ -115,7 +121,7 @@ def poll_uma_vez(conn) -> int:
 
 
 def main():
-    conn = conectar()
+    conn = conectar(autocommit=True)      # trabalho: cada unidade atômica usa `with conn.transaction()`
     log(f"worker de recebimento pronto (poll a cada {INTERVALO_POLL}s)…")
     while True:
         try:

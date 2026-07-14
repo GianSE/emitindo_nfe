@@ -244,7 +244,7 @@ def _guardar_no_storage(conn, nota_id, resultado):
 
 
 def main():
-    conn = conectar()                     # conexão de trabalho (transações manuais)
+    conn = conectar(autocommit=True)      # trabalho: cada unidade atômica usa `with conn.transaction()`
     ouvinte = conectar(autocommit=True)   # conexão só para ouvir NOTIFY
     ouvinte.execute("LISTEN outbox_nova")
     log("worker de emissão pronto (aguardando comandos na outbox)…")

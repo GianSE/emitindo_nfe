@@ -1,0 +1,1 @@
+ALTER TABLE "titulos" ADD CONSTRAINT "titulos_origem_tipo_parcela_uq" UNIQUE("origem_chave","tipo","parcela");

@@ -85,7 +85,7 @@ def _movimentar(conn, payload, sinal: int, ref: str):
 
 
 def main():
-    conn = conectar()
+    conn = conectar(autocommit=True)      # trabalho: cada unidade atômica usa `with conn.transaction()`
     ouvinte = conectar(autocommit=True)
     ouvinte.execute("LISTEN evento_novo")
     log("worker de estoque pronto (aguardando eventos 'nfe.autorizada')…")

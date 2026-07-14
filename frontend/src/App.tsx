@@ -13,6 +13,7 @@ import { Clientes } from "./pages/Clientes.js";
 import { Estoque } from "./pages/Estoque.js";
 import { Financeiro } from "./pages/Financeiro.js";
 import { Compras } from "./pages/Compras.js";
+import { Fornecedores } from "./pages/Fornecedores.js";
 import { Configuracoes } from "./pages/Configuracoes.js";
 
 type Item = { aba: string; icone: string; admin?: boolean };
@@ -25,6 +26,7 @@ const NAV: Item[] = [
   { aba: "Estoque", icone: "estoque" },
   { aba: "Financeiro", icone: "financeiro" },
   { aba: "Compras", icone: "compras" },
+  { aba: "Fornecedores", icone: "fornecedor" },
 ];
 
 export function App() {
@@ -98,6 +100,7 @@ export function App() {
           {aba === "Estoque" && <Estoque />}
           {aba === "Financeiro" && <Financeiro />}
           {aba === "Compras" && <Compras />}
+          {aba === "Fornecedores" && <Fornecedores />}
           {aba === "Configurações" && <Configuracoes />}
         </main>
       </div>

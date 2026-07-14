@@ -56,7 +56,7 @@ def processar_um(conn) -> bool:
     return True
 
 
-def _lancar(conn, tipo, chave, descricao, total, parcelas):
+def _lancar(conn, tipo, chave, descricao, total, parcelas, nota_id=None):
     """Cria os títulos (1 por parcela). Idempotente por (chave, tipo, parcela)."""
     hoje = datetime.date.today()
     valor_parcela = round(total / parcelas, 2)
@@ -66,9 +66,9 @@ def _lancar(conn, tipo, chave, descricao, total, parcelas):
         valor = valor_parcela if p < parcelas else round(total - valor_parcela * (parcelas - 1), 2)
         venc = hoje + datetime.timedelta(days=PRAZO_DIAS * p)
         inserido = conn.execute(
-            "INSERT INTO titulos (tipo, origem_chave, descricao, valor, parcela, total_parcelas, vencimento) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (origem_chave, tipo, parcela) DO NOTHING RETURNING id",
-            (tipo, chave, descricao, valor, p, parcelas, venc),
+            "INSERT INTO titulos (nota_id, tipo, origem_chave, descricao, valor, parcela, total_parcelas, vencimento) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (origem_chave, tipo, parcela) DO NOTHING RETURNING id",
+            (nota_id, tipo, chave, descricao, valor, p, parcelas, venc),
         ).fetchone()
         if inserido:
             log(f"  💰 {verbo}: R$ {valor:.2f}  parc {p}/{parcelas}  venc {venc}  ({descricao})")
@@ -84,7 +84,8 @@ def _lancar_receber(conn, payload):
     total = sum(float(i["qtd"]) * float(i["vUnit"]) for i in itens)
     parcelas = int((opcoes or {}).get("parcelas", 1))
     _lancar(conn, "receber", payload.get("chave"),
-            f"Venda NF nº {payload.get('numero')}", total, parcelas)
+            f"Venda NF nº {payload.get('numero')}", total, parcelas,
+            nota_id=payload.get("nota_id"))   # liga o título a nota (FK)
 
 
 def _lancar_pagar(conn, payload):
@@ -94,7 +95,7 @@ def _lancar_pagar(conn, payload):
 
 
 def main():
-    conn = conectar()
+    conn = conectar(autocommit=True)      # trabalho: cada unidade atômica usa `with conn.transaction()`
     ouvinte = conectar(autocommit=True)
     ouvinte.execute("LISTEN evento_novo")
     log("worker financeiro pronto (contas a pagar/receber)…")

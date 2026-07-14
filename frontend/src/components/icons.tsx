@@ -24,6 +24,7 @@ const ICONS: Record<string, ReactNode> = {
   fechar: <path d="M18 6 6 18M6 6l12 12" />,
   sol: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4" /></>,
   lua: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
+  fornecedor: <><path d="M3 7l1.5-3h15L21 7" /><path d="M4 7v13h16V7" /><path d="M3 7h18" /><path d="M9 20v-5h6v5" /></>,
 };
 
 export function Icon({ name, size = 20, filled = false, className = "" }:

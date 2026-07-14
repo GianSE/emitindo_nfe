@@ -3,6 +3,7 @@ import authRoutes from "./auth.routes.js";
 import empresaRoutes from "./empresa.routes.js";
 import produtosRoutes from "./produtos.routes.js";
 import clientesRoutes from "./clientes.routes.js";
+import fornecedoresRoutes from "./fornecedores.routes.js";
 import vendasRoutes from "./vendas.routes.js";
 import notasRoutes from "./notas.routes.js";
 import financeiroRoutes from "./financeiro.routes.js";
@@ -14,6 +15,7 @@ export default async function registrarRotas(app: FastifyInstance) {
   await app.register(empresaRoutes);
   await app.register(produtosRoutes);
   await app.register(clientesRoutes);
+  await app.register(fornecedoresRoutes);
   await app.register(vendasRoutes);
   await app.register(notasRoutes);
   await app.register(financeiroRoutes);
